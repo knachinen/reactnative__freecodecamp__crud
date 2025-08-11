@@ -1,10 +1,13 @@
-import { Text, View, TextInput, Pressable, StyleSheet, FlatList } from "react-native";
+import { Text, View, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 
 import { data } from "@/data/todos";
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { Inter_300Light, useFonts } from "@expo-google-fonts/inter";
+import { DancingScript_400Regular, DancingScript_500Medium } from "@expo-google-fonts/dancing-script";
 
 // const renderItem = ({ item }) => (
 //   <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
@@ -18,10 +21,39 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 //     </Pressable>
 //   </View>
 // );
+
+const defaultFont = "Inter_300Light"; // Default font
  
 export default function Index() {
   const [todos, setTodos] = useState(data.sort((a, b) => b.id - a.id));
   const [text, setText] = useState("");
+
+  const [loaded, error] = useFonts({
+    Inter_300Light,
+    DancingScript_400Regular,
+    DancingScript_500Medium,
+  });
+
+  // If 'loaded' is false, it means the fonts are still fetching.
+  if (!loaded) {
+    // We can return a loading component or simply null.
+    // An ActivityIndicator is a good visual for the user.
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  // You can also handle a real error here if the 'error' object is not null.
+  if (error) {
+    console.error("A real font loading error occurred:", error);
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Failed to load fonts.</Text>
+      </View>
+    );
+  }
 
   const addTodo = () => {
     if (text.trim()) {
@@ -45,7 +77,7 @@ export default function Index() {
   const renderItem = ({ item }) => (
     <View style={styles.todoItem}>
       <Pressable onPress={() => toggleTodo(item.id)} style={{ flex: 1 }}>
-        <Text style={{ textDecorationLine: item.completed ? "line-through" : "none" }}>
+        <Text style={item.completed ? styles.doneItem : styles.todoItem}>
           {item.title}
         </Text>
       </Pressable>
@@ -93,6 +125,7 @@ export default function Index() {
         data={todos}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
+        // style={styles.todoList}
         renderItem={renderItem}
       />
 
@@ -136,6 +169,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     flex: 1,
+    fontFamily: defaultFont,
   },
   addButton: {
     // marginTop: 10,
@@ -164,6 +198,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+    fontFamily: defaultFont,
+  },
+  doneItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    // fontFamily: "Inter_300Light",
+    fontFamily: defaultFont,
+    fontStyle: "italic",
+    color: "#999",
+    textDecorationLine: "line-through",
   },
   deleteButton: {
     marginLeft: 10,
