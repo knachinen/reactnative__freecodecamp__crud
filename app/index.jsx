@@ -12,6 +12,7 @@ import { DancingScript_400Regular, DancingScript_500Medium } from "@expo-google-
 
 import Animated, { LinearTransition } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -26,6 +27,7 @@ export default function Index() {
   const [text, setText] = useState("");
   const [isDataLoading, setIsDataLoading] = useState(true);
   const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
+  const router = useRouter();
 
   // Load fonts
   const [loaded, error] = useFonts({
@@ -178,10 +180,23 @@ export default function Index() {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
 
+  // Function to handle pressing a todo item
+  const handlePress = (id) => {
+    // Navigate to the todo details or edit screen
+    // For now, we will just log the id
+    console.log("Todo pressed:", id);
+    // You can implement navigation logic here if needed
+    router.push(`/todos/${id}`);
+  }
+
   // Render each todo item
   const renderItem = ({ item }) => (
     <Animated.View style={styles.todoItem} layout={LinearTransition.springify()}>
-      <Pressable onPress={() => toggleTodo(item.id)} style={{ flex: 1 }}>
+      <Pressable 
+        onPress={() => handlePress(item.id)} 
+        onLongPress={() => toggleTodo(item.id)} 
+        style={{ flex: 1 }}
+        >
         <Text style={item.completed ? styles.doneItem : styles.todoItem}>
           {item.title}
         </Text>

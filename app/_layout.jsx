@@ -12,6 +12,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: "transparent" },
           }}>
           <Stack.Screen name="index" />
+          <Stack.Screen name="todos/[id]" />
         </Stack>
       </SafeAreaProvider>
     </ThemeProvider>
