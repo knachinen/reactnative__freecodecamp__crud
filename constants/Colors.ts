@@ -5,15 +5,15 @@
 
 export const Colors = {
   light: {
-    text: '#1e2a31ff',
-    background: '#f1f1f1ff',
-    icon: '#687076',
-    button: '#687076',
+    text: "#1e2a31ff",
+    background: "#f1f1f1ff",
+    icon: "#687076",
+    button: "#687076",
   },
   dark: {
-    text: '#f1f1f1ff',
-    background: '#1e2a31ff',
-    icon: '#9BA1A6',
-    button: '#9BA1A6',
+    text: "#f1f1f1ff",
+    background: "#1e2a31ff",
+    icon: "#9BA1A6",
+    button: "#9BA1A6",
   },
 };

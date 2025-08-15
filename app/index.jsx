@@ -1,25 +1,39 @@
-import { Text, View, TextInput, Pressable, StyleSheet, FlatList, ActivityIndicator, StatusBar, Alert, Platform } from "react-native";
+import {
+  Text,
+  View,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  StatusBar,
+  Alert,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useContext, useEffect } from "react";
 
 import { data } from "@/data/todos";
 import { ThemeContext } from "@/context/ThemeContext";
 
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { Inter_300Light, useFonts } from "@expo-google-fonts/inter";
-import { DancingScript_400Regular, DancingScript_500Medium } from "@expo-google-fonts/dancing-script";
+import {
+  DancingScript_400Regular,
+  DancingScript_500Medium,
+} from "@expo-google-fonts/dancing-script";
 
 import Animated, { LinearTransition } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
 const defaultFont = "Inter_300Light"; // Default font
 const STORAGE_KEY = "todos"; // Key for AsyncStorage
- 
+
 export default function Index() {
   // State for todos and input text
   // const [todos, setTodos] = useState(data.sort((a, b) => b.id - a.id));
@@ -58,7 +72,9 @@ export default function Index() {
           } else {
             // If the array is empty, use default data
             setTodos(data.sort((a, b) => b.id - a.id));
-            console.log("Found an empty array in AsyncStorage, using default data.");
+            console.log(
+              "Found an empty array in AsyncStorage, using default data."
+            );
           }
         } else {
           // If nothing is found in storage, use the default data
@@ -100,32 +116,35 @@ export default function Index() {
       const jsonString = await AsyncStorage.getItem(STORAGE_KEY);
 
       // --- NEW: Platform-specific logic for exporting ---
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         // Handle export for web browsers
-        const file = new Blob([jsonString], { type: 'application/json' });
+        const file = new Blob([jsonString], { type: "application/json" });
         const url = URL.createObjectURL(file);
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = url;
-        link.download = 'todos_backup.json';
+        link.download = "todos_backup.json";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
         // Handle export for iOS and Android
-        const fileUri = FileSystem.cacheDirectory + 'todos_backup.json';
+        const fileUri = FileSystem.cacheDirectory + "todos_backup.json";
         await FileSystem.writeAsStringAsync(fileUri, jsonString, {
           encoding: FileSystem.EncodingType.UTF8,
         });
 
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: 'application/json',
-            dialogTitle: 'Export Todos',
-            UTI: 'public.json',
+            mimeType: "application/json",
+            dialogTitle: "Export Todos",
+            UTI: "public.json",
           });
         } else {
-          Alert.alert("Sharing not available", "Sharing is not available on this device.");
+          Alert.alert(
+            "Sharing not available",
+            "Sharing is not available on this device."
+          );
         }
       }
     } catch (error) {
@@ -159,10 +178,7 @@ export default function Index() {
   const addTodo = () => {
     if (text.trim()) {
       const newId = todos.length > 0 ? todos[0].id + 1 : 1;
-      setTodos([
-        { id: newId, title: text.trim(), completed: false },
-        ...todos,
-      ]);
+      setTodos([{ id: newId, title: text.trim(), completed: false }, ...todos]);
       setText("");
       // Log the new todo for debugging
       // console.log("New todo added:", { id: newId, text: text.trim(), completed: false });
@@ -172,7 +188,11 @@ export default function Index() {
 
   // Function to toggle the completion status of a todo
   const toggleTodo = (id) => {
-    setTodos(todos.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
   };
 
   // Function to delete a todo
@@ -187,23 +207,34 @@ export default function Index() {
     console.log("Todo pressed:", id);
     // You can implement navigation logic here if needed
     router.push(`/todos/${id}`);
-  }
+  };
 
   // Render each todo item
   const renderItem = ({ item }) => (
-    <Animated.View style={styles.todoItem} layout={LinearTransition.springify()}>
-      <Pressable 
-        onPress={() => handlePress(item.id)} 
-        onLongPress={() => toggleTodo(item.id)} 
+    <Animated.View
+      style={styles.todoItem}
+      layout={LinearTransition.springify()}
+    >
+      <Pressable
+        onPress={() => handlePress(item.id)}
+        onLongPress={() => toggleTodo(item.id)}
         style={{ flex: 1 }}
-        >
+      >
         <Text style={item.completed ? styles.doneItem : styles.todoItem}>
           {item.title}
         </Text>
       </Pressable>
-      <Pressable onPress={() => deleteTodo(item.id)} style={styles.deleteButton}>
+      <Pressable
+        onPress={() => deleteTodo(item.id)}
+        style={styles.deleteButton}
+      >
         {/* <Text style={styles.deleteButtonText}>Delete</Text> */}
-        <MaterialIcons name="highlight-remove" size={24} color="red" selectable={undefined} />
+        <MaterialIcons
+          name="highlight-remove"
+          size={24}
+          color="red"
+          selectable={undefined}
+        />
       </Pressable>
     </Animated.View>
   );
@@ -211,7 +242,6 @@ export default function Index() {
   // Main render function
   return (
     <SafeAreaView style={styles.container}>
-
       {/* Input for adding new todo */}
       <View style={styles.inputContainer}>
         <TextInput
@@ -224,11 +254,26 @@ export default function Index() {
         <Pressable onPress={addTodo} style={styles.addButton}>
           <Text style={styles.addButtonText}>Add</Text>
         </Pressable>
-        <Pressable onPress={() => setColorScheme(colorScheme === "light" ? "dark" : "light")} style={styles.colorSchemeButton}>
-          <MaterialIcons name={colorScheme === "light" ? "light-mode" : "nightlight-round"} size={24} selectable={undefined} style={styles.colorSchemeIcon} />
+        <Pressable
+          onPress={() =>
+            setColorScheme(colorScheme === "light" ? "dark" : "light")
+          }
+          style={styles.colorSchemeButton}
+        >
+          <MaterialIcons
+            name={colorScheme === "light" ? "light-mode" : "nightlight-round"}
+            size={24}
+            selectable={undefined}
+            style={styles.colorSchemeIcon}
+          />
         </Pressable>
         <Pressable onPress={exportToFile} style={styles.colorSchemeButton}>
-          <MaterialIcons name="file-download" size={24} selectable={undefined} style={styles.colorSchemeIcon} />
+          <MaterialIcons
+            name="file-download"
+            size={24}
+            selectable={undefined}
+            style={styles.colorSchemeIcon}
+          />
         </Pressable>
       </View>
 
@@ -251,7 +296,6 @@ export default function Index() {
       />
 
       {/* Footer or additional content can go here */}
-
     </SafeAreaView>
   );
 }

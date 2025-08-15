@@ -1,21 +1,22 @@
-import { useLocalSearchParams } from "expo-router";
-import { View, Text, TextInput, Pressable, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { useContext, useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { Inter_300Light, useFonts } from "@expo-google-fonts/inter";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-
 import { ThemeContext } from "@/context/ThemeContext";
-import { Colors } from "@/constants/Colors";
 
 const STORAGE_KEY = "todos"; // Key for AsyncStorage
-
-// Sample data for initial todos
-import { data } from "@/data/todos";
 
 // Edit Todo Screen
 export default function EditScreen() {
@@ -23,7 +24,7 @@ export default function EditScreen() {
   const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
   console.log("EditScreen | colorScheme:", colorScheme);
   console.log("EditScreen | theme:", theme);
-  
+
   const [todo, setTodo] = useState({});
   // const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -38,7 +39,7 @@ export default function EditScreen() {
         // Check if the string exists and is a valid JSON string
         if (storedTodos) {
           // Parse the JSON string into an array
-          const parsedTodos = JSON.parse(storedTodos);  // parsedTodos is the total todos array
+          const parsedTodos = JSON.parse(storedTodos); // parsedTodos is the total todos array
 
           // Check the length of the parsed array
           if (parsedTodos.length > 0) {
@@ -52,7 +53,9 @@ export default function EditScreen() {
               // Find the todo with the matching id
               // Use parseInt to convert the id to a number for comparison
               // console.log("loadTodos() | Looking for todo with id:", id);
-              const myTodo = parsedTodos.find(todo => todo.id === parseInt(id));
+              const myTodo = parsedTodos.find(
+                (todo) => todo.id === parseInt(id)
+              );
               if (myTodo) {
                 setTodo(myTodo);
                 // console.log("loadTodos() | Found todo:", myTodo);
@@ -70,106 +73,117 @@ export default function EditScreen() {
     };
     loadTodos(id);
   }, [id]);
-    
-    // Load fonts
-    const [loaded, error] = useFonts({
-        Inter_300Light,
-    });
 
-    // Create styles based on the current theme and color scheme
-    const styles = createStyles(theme, colorScheme);
+  // Load fonts
+  const [loaded, error] = useFonts({
+    Inter_300Light,
+  });
 
-    // If 'loaded' is false, it means the fonts are still fetching.
-    if (!loaded) {
+  // Create styles based on the current theme and color scheme
+  const styles = createStyles(theme, colorScheme);
+
+  // If 'loaded' is false, it means the fonts are still fetching.
+  if (!loaded) {
     // We can return a loading component or simply null.
     // An ActivityIndicator is a good visual for the user.
     return (
-        <View style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
-        </View>
+      </View>
     );
-    }
+  }
 
-    // You can also handle a real error here if the 'error' object is not null.
-    if (error) {
+  // You can also handle a real error here if the 'error' object is not null.
+  if (error) {
     console.error("A real font loading error occurred:", error);
     return (
-        <View style={styles.errorContainer}>
+      <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Failed to load fonts.</Text>
-        </View>
+      </View>
     );
+  }
+
+  const handleSave = async () => {
+    // Logic to save the edited todo
+    // For now, we will just log the current state
+    // console.log("handleSave | Saving todo:", todo);
+
+    // You can implement saving logic here, e.g., updating AsyncStorage
+    try {
+      // AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      const updatedTodos = { ...todo, title: todo.title };
+      const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
+      const parsedTodos = jsonValue ? JSON.parse(jsonValue) : [];
+      // console.log("handleSave | Parsed todos:", parsedTodos);
+
+      if (parsedTodos && parsedTodos.length > 0) {
+        // Update the existing todo with the same id
+        // console.log("handleSave | Updating existing todo with id:", updatedTodos.id);
+        // Find the todo with the same id and update it
+        // const updatedTodos = parsedTodos.map(t => t.id === updatedTodos.id ? updatedTodos : t);
+        // Save the updated todos back to AsyncStorage
+        const otherTodos = parsedTodos.filter((t) => t.id !== updatedTodos.id);
+        const newTodos = [...otherTodos, updatedTodos];
+        // console.log("handleSave | New todos array:", newTodos);
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newTodos));
+      } else {
+        // If no todos exist, create a new array with the updated todo
+        console.log(
+          "handleSave | No existing todos found, creating a new todo."
+        );
+        // await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([updatedTodos]));
+      }
+      console.log("handleSave | Todo saved successfully.");
+
+      router.push("/"); // Navigate back to the main screen after saving
+      Alert.alert(
+        "handleSave | Todo saved",
+        `Todo with id ${id} has been saved.`
+      );
+    } catch (error) {
+      console.error("handleSave | Failed to save todo:", error);
     }
+  };
 
-    const handleSave = async () => {
-        // Logic to save the edited todo
-        // For now, we will just log the current state
-        // console.log("handleSave | Saving todo:", todo);
-        
-        // You can implement saving logic here, e.g., updating AsyncStorage
-        try {
-            // AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-            const updatedTodos = {...todo, title: todo.title }
-            const jsonValue = await AsyncStorage.getItem(STORAGE_KEY);
-            const parsedTodos = jsonValue ? JSON.parse(jsonValue) : [];
-            // console.log("handleSave | Parsed todos:", parsedTodos);
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: styles.background.backgroundColor }}
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Edit Todo : {id}</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter todo title"
+          placeholderTextColor="#999"
+          value={todo.title || ""}
+          onChangeText={(text) => setTodo((prev) => ({ ...prev, title: text }))}
+          maxLength={50}
+        />
 
-            if (parsedTodos && parsedTodos.length > 0) {
-              // Update the existing todo with the same id
-              // console.log("handleSave | Updating existing todo with id:", updatedTodos.id);
-              // Find the todo with the same id and update it
-              // const updatedTodos = parsedTodos.map(t => t.id === updatedTodos.id ? updatedTodos : t);
-              // Save the updated todos back to AsyncStorage
-              const otherTodos = parsedTodos.filter(t => t.id !== updatedTodos.id);
-              const newTodos = [...otherTodos, updatedTodos];
-              // console.log("handleSave | New todos array:", newTodos);
-              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newTodos));
-            } else {
-              // If no todos exist, create a new array with the updated todo
-              console.log("handleSave | No existing todos found, creating a new todo.");
-              // await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([updatedTodos]));
-            }
-            console.log("handleSave | Todo saved successfully.");
+        {/* Button container */}
+        <View style={styles.buttonContainer}>
+          {/* Save button to save the edited todo */}
+          <Pressable
+            style={styles.button}
+            onPress={handleSave}
+            disabled={!todo.title}
+          >
+            <Text style={styles.buttonText}>Save</Text>
+          </Pressable>
 
-            router.push("/"); // Navigate back to the main screen after saving
-            Alert.alert("handleSave | Todo saved", `Todo with id ${id} has been saved.`);
-        } catch (error) {
-            console.error("handleSave | Failed to save todo:", error);
-        }
-    }
-
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: styles.background.backgroundColor }}>
-        <View style={styles.container}>
-
-          <Text style={styles.title}>Edit Todo : {id}</Text>
-          <TextInput
-              style={styles.input}
-              placeholder="Enter todo title"
-              placeholderTextColor="#999"
-              value={todo.title || ""}
-              onChangeText={(text) => setTodo(prev => ({ ...prev, title: text }))}
-              maxLength={50}
-          />
-
-          {/* Button container */}
-          <View style={styles.buttonContainer}>
-
-            {/* Save button to save the edited todo */}
-            <Pressable style={styles.button} onPress={handleSave} disabled={!todo.title}>
-                <Text style={styles.buttonText}>Save</Text>
-            </Pressable>
-
-            {/* Cancel button to go back to the main screen */}
-            <Pressable style={[styles.button, { backgroundColor: 'red' }]} onPress={() => router.push("/")} disabled={!todo.title}>
-                <Text style={styles.buttonText}>Cancel</Text>
-            </Pressable>
-
-          </View>
-
+          {/* Cancel button to go back to the main screen */}
+          <Pressable
+            style={[styles.button, { backgroundColor: "red" }]}
+            onPress={() => router.push("/")}
+            disabled={!todo.title}
+          >
+            <Text style={styles.buttonText}>Cancel</Text>
+          </Pressable>
         </View>
-        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      </SafeAreaView>
-    );
+      </View>
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+    </SafeAreaView>
+  );
 }
 
 function createStyles(theme, colorScheme) {
@@ -212,7 +226,7 @@ function createStyles(theme, colorScheme) {
       fontSize: 24,
       fontWeight: "bold",
       marginBottom: 20,
-      color: theme.text
+      color: theme.text,
     },
     input: {
       height: 40,

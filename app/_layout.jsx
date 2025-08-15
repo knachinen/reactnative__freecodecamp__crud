@@ -10,7 +10,8 @@ export default function RootLayout() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: "transparent" },
-          }}>
+          }}
+        >
           <Stack.Screen name="index" />
           <Stack.Screen name="todos/[id]" />
         </Stack>
