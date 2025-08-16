@@ -136,7 +136,8 @@ export default function EditScreen() {
             style={({ pressed }) => [
               styles.button,
               {
-                backgroundColor: todo.title.trim() === "" ? "#ccc" : "#007BFF",
+                backgroundColor:
+                  todo.title.trim() === "" ? "#ccc" : theme.button,
               },
               pressed && { opacity: 0.8 },
             ]}
@@ -150,7 +151,7 @@ export default function EditScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.button,
-              { backgroundColor: "red" },
+              { backgroundColor: theme.buttonWarning },
               pressed && { opacity: 0.8 },
             ]}
             onPress={() => router.push("/")}
@@ -174,6 +175,7 @@ const createStyles = (theme) => {
     background: {
       backgroundColor: theme.background,
       flex: 1,
+      padding: 20,
     },
     centeredContainer: {
       flex: 1,
@@ -212,9 +214,10 @@ const createStyles = (theme) => {
       borderRadius: 5,
       alignItems: "center",
       width: "40%", // Adjusted width for better spacing
+      color: theme.button,
     },
     buttonText: {
-      color: "#fff",
+      color: theme.buttonText,
       fontSize: 16,
       fontWeight: "bold",
     },

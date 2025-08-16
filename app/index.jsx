@@ -12,39 +12,44 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useContext, useEffect } from "react";
-
-import { data } from "@/data/todos";
-import { ThemeContext } from "@/context/ThemeContext";
-
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-
-import { Inter_300Light, useFonts } from "@expo-google-fonts/inter";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFonts, Inter_300Light } from "@expo-google-fonts/inter";
 import {
   DancingScript_400Regular,
   DancingScript_500Medium,
 } from "@expo-google-fonts/dancing-script";
-
 import Animated, { LinearTransition } from "react-native-reanimated";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 
-const defaultFont = "Inter_300Light"; // Default font
-const STORAGE_KEY = "todos"; // Key for AsyncStorage
+// Local imports
+import { data } from "@/data/todos";
+import { ThemeContext } from "@/context/ThemeContext";
 
+// Constants
+const defaultFont = "Inter_300Light";
+const STORAGE_KEY = "todos";
+
+/**
+ * Main Todo List Screen Component.
+ * Manages the state and functionality for the todo list, including
+ * adding, deleting, and toggling todos, as well as handling
+ * data persistence with AsyncStorage and theme switching.
+ */
 export default function Index() {
-  // State for todos and input text
-  // const [todos, setTodos] = useState(data.sort((a, b) => b.id - a.id));
-  const [todos, setTodos] = useState([]); // Initialize with an empty array
+  // State variables for todos, input text, and loading status
+  const [todos, setTodos] = useState([]);
   const [text, setText] = useState("");
   const [isDataLoading, setIsDataLoading] = useState(true);
+
+  // Access theme and router from contexts/hooks
   const { colorScheme, setColorScheme, theme } = useContext(ThemeContext);
   const router = useRouter();
 
-  // Load fonts
-  const [loaded, error] = useFonts({
+  // Load fonts for the app.
+  const [fontsLoaded] = useFonts({
     Inter_300Light,
     DancingScript_400Regular,
     DancingScript_500Medium,
@@ -53,33 +58,21 @@ export default function Index() {
   // Create styles based on the current theme and color scheme
   const styles = createStyles(theme, colorScheme);
 
-  // Use useEffect to load todos from AsyncStorage when the component mounts
+  // --- useEffect Hook for Data Management ---
+  // Load todos from AsyncStorage on component mount (runs only once).
   useEffect(() => {
+    /**
+     * Loads todos from AsyncStorage. If no data is found, it uses a default dataset.
+     */
     const loadTodos = async () => {
       try {
         const storedTodos = await AsyncStorage.getItem(STORAGE_KEY);
-
-        // Check if the string exists and is a valid JSON string
         if (storedTodos) {
-          // Parse the JSON string into an array
           const parsedTodos = JSON.parse(storedTodos);
-
-          // Check the length of the parsed array
-          if (parsedTodos.length > 0) {
-            // console.log("Parsed todos:", parsedTodos);
-            const sortedTodos = parsedTodos.sort((a, b) => b.id - a.id);
-            setTodos(sortedTodos);
-          } else {
-            // If the array is empty, use default data
-            setTodos(data.sort((a, b) => b.id - a.id));
-            console.log(
-              "Found an empty array in AsyncStorage, using default data."
-            );
-          }
+          setTodos(parsedTodos.sort((a, b) => b.id - a.id));
         } else {
-          // If nothing is found in storage, use the default data
+          // If no data is found, use the default data from a local file
           setTodos(data.sort((a, b) => b.id - a.id));
-          console.log("No todos found in AsyncStorage, using default data.");
         }
       } catch (error) {
         console.error("Failed to load todos from AsyncStorage:", error);
@@ -88,23 +81,25 @@ export default function Index() {
       }
     };
     loadTodos();
-  }, []);
+  }, []); // Empty dependency array means this effect runs only once on mount.
 
-  // Use useEffect to save todos to AsyncStorage whenever the todos state changes
+  // Save todos to AsyncStorage whenever the `todos` state changes.
   useEffect(() => {
     const saveTodos = async () => {
-      try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-      } catch (error) {
-        console.error("Failed to save todos to AsyncStorage:", error);
+      if (!isDataLoading) {
+        try {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        } catch (error) {
+          console.error("Failed to save todos to AsyncStorage:", error);
+        }
       }
     };
-    if (!isDataLoading) {
-      saveTodos();
-    }
-  }, [todos, isDataLoading]);
+    saveTodos();
+  }, [todos, isDataLoading]); // This effect runs when todos or isDataLoading changes.
 
-  // Function to export the todos to a file and share it.
+  /**
+   * Handles the export functionality, saving todos to a file and sharing it.
+   */
   const exportToFile = async () => {
     if (!todos || todos.length === 0) {
       Alert.alert("No data to export", "Your to-do list is empty.");
@@ -112,12 +107,8 @@ export default function Index() {
     }
 
     try {
-      // Get the data from AsyncStorage as a JSON string
       const jsonString = await AsyncStorage.getItem(STORAGE_KEY);
-
-      // --- NEW: Platform-specific logic for exporting ---
       if (Platform.OS === "web") {
-        // Handle export for web browsers
         const file = new Blob([jsonString], { type: "application/json" });
         const url = URL.createObjectURL(file);
         const link = document.createElement("a");
@@ -128,7 +119,6 @@ export default function Index() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else {
-        // Handle export for iOS and Android
         const fileUri = FileSystem.cacheDirectory + "todos_backup.json";
         await FileSystem.writeAsStringAsync(fileUri, jsonString, {
           encoding: FileSystem.EncodingType.UTF8,
@@ -153,40 +143,21 @@ export default function Index() {
     }
   };
 
-  // If 'loaded' is false, it means the fonts are still fetching.
-  if (!loaded) {
-    // We can return a loading component or simply null.
-    // An ActivityIndicator is a good visual for the user.
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
-
-  // You can also handle a real error here if the 'error' object is not null.
-  if (error) {
-    console.error("A real font loading error occurred:", error);
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Failed to load fonts.</Text>
-      </View>
-    );
-  }
-
-  // Function to add a new todo
+  /**
+   * Adds a new todo item to the list.
+   */
   const addTodo = () => {
     if (text.trim()) {
       const newId = todos.length > 0 ? todos[0].id + 1 : 1;
       setTodos([{ id: newId, title: text.trim(), completed: false }, ...todos]);
       setText("");
-      // Log the new todo for debugging
-      // console.log("New todo added:", { id: newId, text: text.trim(), completed: false });
-      // console.log("Current todos:", todos);
     }
   };
 
-  // Function to toggle the completion status of a todo
+  /**
+   * Toggles the completion status of a todo item.
+   * @param {number} id - The ID of the todo to toggle.
+   */
   const toggleTodo = (id) => {
     setTodos(
       todos.map((todo) =>
@@ -195,21 +166,26 @@ export default function Index() {
     );
   };
 
-  // Function to delete a todo
+  /**
+   * Deletes a todo item from the list.
+   * @param {number} id - The ID of the todo to delete.
+   */
   const deleteTodo = (id) => {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
 
-  // Function to handle pressing a todo item
+  /**
+   * Handles a press event on a todo item, navigating to the edit screen.
+   * @param {number} id - The ID of the todo to edit.
+   */
   const handlePress = (id) => {
-    // Navigate to the todo details or edit screen
-    // For now, we will just log the id
-    console.log("Todo pressed:", id);
-    // You can implement navigation logic here if needed
     router.push(`/todos/${id}`);
   };
 
-  // Render each todo item
+  /**
+   * Renders each individual todo item in the FlatList.
+   * @param {object} item - The todo item to render.
+   */
   const renderItem = ({ item }) => (
     <Animated.View
       style={styles.todoItem}
@@ -228,21 +204,38 @@ export default function Index() {
         onPress={() => deleteTodo(item.id)}
         style={styles.deleteButton}
       >
-        {/* <Text style={styles.deleteButtonText}>Delete</Text> */}
         <MaterialIcons
           name="highlight-remove"
           size={24}
-          color="red"
+          color={theme.buttonWarning}
           selectable={undefined}
         />
       </Pressable>
     </Animated.View>
   );
 
-  // Main render function
+  // Show a loading indicator while fonts or data are being loaded
+  if (!fontsLoaded || isDataLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.text} />
+      </View>
+    );
+  }
+
+  // Handle font loading error
+  if (!fontsLoaded) {
+    console.error("Font loading error.");
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Failed to load fonts.</Text>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Input for adding new todo */}
+      {/* Input section for adding new todos */}
       <View style={styles.inputContainer}>
         <TextInput
           value={text}
@@ -254,6 +247,7 @@ export default function Index() {
         <Pressable onPress={addTodo} style={styles.addButton}>
           <Text style={styles.addButtonText}>Add</Text>
         </Pressable>
+        {/* Button to toggle color scheme */}
         <Pressable
           onPress={() =>
             setColorScheme(colorScheme === "light" ? "dark" : "light")
@@ -267,6 +261,7 @@ export default function Index() {
             style={styles.colorSchemeIcon}
           />
         </Pressable>
+        {/* Button to export todos */}
         <Pressable onPress={exportToFile} style={styles.colorSchemeButton}>
           <MaterialIcons
             name="file-download"
@@ -277,30 +272,31 @@ export default function Index() {
         </Pressable>
       </View>
 
-      {/* List of todos */}
+      {/* Main list of todos */}
       <Animated.FlatList
         data={todos}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
-        // style={styles.todoList}
         renderItem={renderItem}
         itemLayoutAnimation={LinearTransition}
-        // transition={LinearTransition}
         keyboardDismissMode="on-drag"
       />
 
-      {/* StatusBar for better visibility */}
+      {/* Status bar to match the theme */}
       <StatusBar
         barStyle={colorScheme === "light" ? "dark-content" : "light-content"}
         backgroundColor={theme.background}
       />
-
-      {/* Footer or additional content can go here */}
     </SafeAreaView>
   );
 }
 
-// Function to create styles based on the theme and color scheme
+/**
+ * Creates and returns a StyleSheet object based on the provided theme and color scheme.
+ * @param {object} theme - The theme object containing colors for the UI.
+ * @param {string} colorScheme - The current color scheme ('light' or 'dark').
+ * @returns {object} The StyleSheet object.
+ */
 function createStyles(theme, colorScheme) {
   return StyleSheet.create({
     loadingContainer: {
@@ -323,40 +319,38 @@ function createStyles(theme, colorScheme) {
       flex: 1,
       padding: 20,
       backgroundColor: theme.background,
+      width: "100%",
+      height: "100%",
     },
     inputContainer: {
       marginBottom: 20,
       flexDirection: "row",
       pointerEvents: "auto",
-      marginHorizontal: "auto",
       width: "100%",
     },
     textInput: {
       borderWidth: 1,
-      borderColor: "#ccc",
+      borderColor: theme.text,
       padding: 10,
       borderRadius: 5,
       flex: 1,
       fontFamily: defaultFont,
+      color: theme.text,
+      backgroundColor: theme.inputBackground,
     },
     addButton: {
-      backgroundColor: "#007BFF",
+      backgroundColor: theme.button,
       padding: 10,
       borderRadius: 5,
       marginLeft: 10,
-      flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      minWidth: 60,
-      maxWidth: 80,
-      flexDirection: "row",
-      alignSelf: "center",
-      pointerEvents: "auto",
-      width: "100%",
+      width: 60,
     },
     addButtonText: {
-      color: "#fff",
+      color: theme.buttonText,
       textAlign: "center",
+      fontWeight: "bold",
     },
     todoItem: {
       flexDirection: "row",
@@ -369,31 +363,24 @@ function createStyles(theme, colorScheme) {
       flexDirection: "row",
       alignItems: "center",
       marginBottom: 10,
-      // fontFamily: "Inter_300Light",
       fontFamily: defaultFont,
       fontStyle: "italic",
-      color: "#999",
+      color: theme.textDone,
       textDecorationLine: "line-through",
     },
     deleteButton: {
       marginLeft: 10,
     },
-    deleteButtonText: {
-      color: "red",
-    },
     colorSchemeButton: {
       marginLeft: 10,
       padding: 10,
       borderRadius: 5,
-      // borderColor: theme.icon,
-      // borderWidth: 1,
       justifyContent: "center",
       alignItems: "center",
-      // backgroundColor: "#007BFF",
     },
     colorSchemeIcon: {
       color: theme.icon,
-      size: 18,
+      size: 24,
     },
   });
 }

@@ -12,8 +12,8 @@ export const ThemeProvider = ({ children }) => {
   );
 
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
-  console.log("ThemeProvider | colorScheme:", colorScheme);
-  console.log("ThemeProvider | theme:", theme);
+  // console.log("ThemeProvider | colorScheme:", colorScheme);
+  // console.log("ThemeProvider | theme:", theme);
 
   return (
     <ThemeContext.Provider value={{ colorScheme, setColorScheme, theme }}>
